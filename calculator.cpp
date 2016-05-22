@@ -146,9 +146,9 @@ Token Token_Stream::get(){
 			break;
 
 		default:{
-			for (int i = 0; i <= 26; ++i){
-				if (ch==variables[i].varLetter)
-					return Token{number, variables[i].varValue};
+			for (pair& v : variables){
+				if (ch==v.varLetter)
+					return Token{number, v.varValue};
 			}
 			throw std::runtime_error("Bad Token!");
 		}
@@ -199,9 +199,9 @@ inline void help(){
 //---------------------------------USED-VARIABLES----------------------------------------------
 void usedVariables(){
 	std::cout << "Used variables:\n";
-	for (int i = 0; i < 26; ++i){
-		if (variables[i].varValue!=0){
-			std::cout << char(toupper(variables[i].varLetter)) << "\n";
+	for (pair& v : variables){
+		if (v.varValue!=0){
+			std::cout << char(toupper(v.varLetter)) << "\n";
 		}
 	}
 }
