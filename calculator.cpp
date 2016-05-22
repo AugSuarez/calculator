@@ -1,9 +1,14 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <cmath>
 double result;
+const char number='#';
+const char prompt='>';
+const char quit='e';
+const char print='p';
 //---------------------------------STRUCT-PAIR----------------------------------------------
-struct pair{
+struct pair{//in this program, structs are variables with a letter representation and value
 	char varLetter;
 	double varValue;
 };
@@ -15,32 +20,32 @@ void storeVariable(double x){
 	char loopCheck='y';
 		while(loopCheck=='y'){
 			char ch='s';
-			while(ch=='s' || ch=='p' || ch=='u' || ch=='h'){
-				bool b=true;
+			bool b=true;
+			while(b){
 				std::cout << "Select variable character: ";
 				std::cin >> ch;
-				if(ch!='s' && ch!='p' && ch!='u' && ch!='h')
+				if(ch!='s' && ch!=print && ch!='u' && ch!='h' && ch!='e')
 					b=false;
-				if(b)
+				else if(b)
 					std::cout << "\aCharacter used by a command!\n";
 			}
-			for (int i = 0; i < 26; ++i){
-				if (ch==variables[i].varLetter){
-					if (variables[i].varValue!=0){
+			for (pair& v : variables){
+				if (ch==v.varLetter){
+					if (v.varValue!=0){
 						std::cout << "\aOverwrite? y/n: ";
 						char overwrtCheck;
 						std::cin >> overwrtCheck;
 						if(overwrtCheck=='y'){
-							std::cout << "\"" << variables[i].varLetter << "\"" << " overwritten" << std::endl;
+							std::cout << "\"" << v.varLetter << "\"" << " overwritten" << std::endl;
 						}
 						else{
-							std::cout << "\"" << char(toupper(variables[i].varLetter)) << "\"\a" << " Write to another another variable? y/n: " << std::endl;
+							std::cout << "\"" << char(toupper(v.varLetter)) << "\"\a" << " Write to another another variable? y/n: " << std::endl;
 							std::cin >> loopCheck;
 							break;
 						}
 					}
-					variables[i].varValue=x;
-					std::cout << x << "=>" << char(toupper(variables[i].varLetter)) << std::endl;
+					v.varValue=x;
+					std::cout << x << "=>" << char(toupper(v.varLetter)) << std::endl;
 					loopCheck='n';
 				}
 			}
@@ -70,6 +75,7 @@ class Token_Stream{
 	public:
 		Token get();
 		void putback(Token t);
+		void ignore(char c);
 
 };
 //---------------------------------PRINT-TOKEN----------------------------------------------
@@ -87,6 +93,19 @@ void Token_Stream::putback(Token t){
 	buffer=t;
 	isFull=true;
 }
+void Token_Stream::ignore(char c){//function to ignore errors until char c is found
+	if (isFull && buffer.kind==c){//
+		isFull==false;
+		return;
+	}
+	isFull=false;
+	char ch=0;
+	while(std::cin>>ch){
+		if (ch==c){
+			return;
+		}
+	}
+}
 //---------------------------------GET----------------------------------------------
 Token Token_Stream::get(){
 	if (isFull){
@@ -97,9 +116,18 @@ Token Token_Stream::get(){
 	std::cin >> ch;
 	ch=tolower(ch);
 	switch(ch){
-
-		case 'e': case 'p': case 'h': case 'u':
-		case '+': case '-': case '/': case '*': case '(': case ')': case '!':
+		case quit:
+		case print:
+		case 'h':
+		case 'u':
+		case '+':
+		case '-':
+		case '/':
+		case '*':
+		case '(':
+		case ')':
+		case '!':
+		case '%':
 			return Token{ch};
 			break;
 
@@ -109,7 +137,7 @@ Token Token_Stream::get(){
 			std::cin.putback(ch);
 			double value;
 			std::cin >> value;
-			return Token{'#', value};
+			return Token{number, value};
 			break;
 		}
 
@@ -120,7 +148,7 @@ Token Token_Stream::get(){
 		default:{
 			for (int i = 0; i <= 26; ++i){
 				if (ch==variables[i].varLetter)
-					return Token{'#', variables[i].varValue};
+					return Token{number, variables[i].varValue};
 			}
 			throw std::runtime_error("Bad Token!");
 		}
@@ -148,7 +176,7 @@ double primary(){
 					return innerDouble;
 				break;
 			}
-			case '#':{
+			case number:{
 				Token factorial = ts.get();
 				if (factorial.kind=='!')
 					return getFactorial(t.value);
@@ -157,6 +185,8 @@ double primary(){
 				return t.value;
 				break;
 			}
+			case '-':
+				return -primary();
 			default:
 				throw std::runtime_error("Unrecognized token kind");
 		}
@@ -164,7 +194,7 @@ double primary(){
 }
 //---------------------------------HELP----------------------------------------------
 inline void help(){
-	std::cout << "To use the calculator:\nInput an expression, then press enter.\np->print\ne->exit\ns->save variable after printing\nh->help\nu->print used variables\ng->generate random number\na->advanced mathematics help\n";
+	std::cout << "To use the calculator:\nInput an expression, then press enter.\np->print\ne->quit\ns->save variable after printing\nh->help\nu->print used variables\ng->generate random number\na->advanced mathematics help\n";
 }
 //---------------------------------USED-VARIABLES----------------------------------------------
 void usedVariables(){
@@ -188,20 +218,18 @@ void fillArray(){
 		i++;
 	}
 }
-//---------------------------------#-@-#--MAIN--#-@-#----------------------------------------------
-int main(){
-	fillArray();
-	double value=0;
+void calculate(){
 	std::cout << "Calculator Program: press \'h\' for commands\n";
-	try{
-		while(true){
+	double value=0;
+	while(true){
+		try{
 			Token t = ts.get();
 			switch(t.kind){
-				case 'e':
+				case quit:
 					std::cout << "goodbye";
-					return 0;
-				case 'p':
-					std::cout << "answer: " << value << std::endl;
+					return;
+				case print:
+					std::cout << "= " << value << std::endl;
 					result=value;
 					break;
 				case 'h':
@@ -214,13 +242,18 @@ int main(){
 					ts.putback(t);
 					value=expression();
 			}
+		}catch(std::runtime_error &myError){
+			std::cerr << myError.what() << std::endl;
+			ts.ignore(print);//ignore errors until print is read
 		}
 	}
-	catch(std::runtime_error &error1){
-		std::cerr << error1.what() << std::endl;
-		return -1;
-	}
+}
+//---------------------------------#-@-#--MAIN--#-@-#----------------------------------------------
+int main(){
+	fillArray();
+	calculate();
 }//end main
+
 //---------------------------------TERM----------------------------------------------
 double term(){
 	double left = primary();
@@ -238,6 +271,16 @@ double term(){
 				else
 					left /= nonZeroInt;
 					t = ts.get();
+					break;
+			}
+			case '%':{
+				double nonZeroInt = primary();
+				if (nonZeroInt==0){
+					throw std::runtime_error("Cannot divide by zero!");
+				}
+				else
+					left = fmod(left, nonZeroInt);
+					t=ts.get();
 					break;
 			}
 			default:
@@ -265,28 +308,4 @@ double expression(){
 				return left;
 		}//end switch
 	}//end while
-}/*Token t = ts.get();
-			if (t.kind=='p'){
-				std::cout << "answer: " << value << std::endl;
-				result=value;
-			}
-			else
-				ts.putback(t);
-
-			t = ts.get();
-			if (t.kind=='e')
-				break;
-			else 
-				ts.putback(t);
-
-			t = ts.get();
-			if(t.kind=='h')
-				help();
-			else 
-				ts.putback(t);
-
-			t = ts.get();
-			if(t.kind=='u')
-				usedVariables();
-			else 
-				ts.putback(t);*/
+}

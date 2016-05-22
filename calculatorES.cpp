@@ -192,7 +192,7 @@ void fillArray(){
 int main(){
 	fillArray();
 	double value=0;
-	std::cout << "Calculadora: oprima \'h\' para aydua\n";
+	std::cout << "Calculadora: oprima \'h\' para ayuda\n";
 	try{
 		while(true){
 			Token t = ts.get();
