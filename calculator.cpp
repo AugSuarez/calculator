@@ -2,6 +2,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cmath>
+#include <cctype>
 double result;
 const char number='#';
 const char prompt='>';
@@ -113,8 +114,11 @@ Token Token_Stream::get(){
 		return buffer;
 	}
 	char ch;
-	std::cin >> ch;
+	std::cin >> std::noskipws >> ch;
 	ch=tolower(ch);
+	if (std::isspace(ch) || ch=='\n'){
+		ch=print;
+	}
 	switch(ch){
 		case quit:
 		case print:
@@ -199,9 +203,9 @@ inline void help(){
 //---------------------------------USED-VARIABLES----------------------------------------------
 void usedVariables(){
 	std::cout << "Used variables:\n";
-	for (pair& v : variables){
-		if (v.varValue!=0){
-			std::cout << char(toupper(v.varLetter)) << "\n";
+	for (int i = 0; i < 26; ++i){
+		if (variables[i].varValue!=0){
+			std::cout << char(toupper(variables[i].varLetter)) << "\n";
 		}
 	}
 }
@@ -244,7 +248,7 @@ void calculate(){
 			}
 		}catch(std::runtime_error &myError){
 			std::cerr << myError.what() << std::endl;
-			ts.ignore(print);//ignore errors until print is read
+			// ts.ignore(print);//ignore errors until print is read
 		}
 	}
 }
